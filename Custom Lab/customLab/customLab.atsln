@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Atmel Studio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "customLab", "customLab\customLab.cproj", "{77775984-D71A-466A-88CE-3E6EC3E3BC50}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{77775984-D71A-466A-88CE-3E6EC3E3BC50}.Debug|AVR.ActiveCfg = Debug|AVR
+		{77775984-D71A-466A-88CE-3E6EC3E3BC50}.Debug|AVR.Build.0 = Debug|AVR
+		{77775984-D71A-466A-88CE-3E6EC3E3BC50}.Release|AVR.ActiveCfg = Release|AVR
+		{77775984-D71A-466A-88CE-3E6EC3E3BC50}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
