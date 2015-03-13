@@ -92,6 +92,11 @@ unsigned char RIGHTNotes	= 0x00;
 static unsigned char curNotes = 0x00;
 
 unsigned long addScore(unsigned long score, unsigned char note){
+	// if(USART_HasReceived(0))
+	// 	input_char = USART_Receive(0);
+	// if(USART_IsSendReady(0))
+	// 	USART_Send(input_char,0);
+	note = note & 0xFE;
 	if(input_char == UP_LOWER || input_char == UP_UPPER){
 		if(note == UP){
 			score = score + 10;
@@ -124,7 +129,10 @@ int SM1_Tick(int state) { //matrix display
 	// === Transitions ===
 	switch (state) { // cycle through each column //transition
 		case sm1_wait: 
-			if(game) state = sm1_display1;
+			if(game){
+				state = sm1_display1;
+				n = 0;
+			}
 			else state = sm1_wait;
 		break;
 		case sm1_display1: 
@@ -185,16 +193,49 @@ int SM1_Tick(int state) { //matrix display
 	return state;
 };
 
+void num_to_char( unsigned long n){
+	if(n == 1)
+		LCD_WriteData('1');
+	else if(n == 2)
+		LCD_WriteData('2');
+	else if(n == 3)
+		LCD_WriteData('3');
+	else if(n == 4)
+		LCD_WriteData('4');
+	else if(n == 5)
+		LCD_WriteData('5');
+	else if(n == 6)
+		LCD_WriteData('6');
+	else if(n == 7)
+		LCD_WriteData('7');
+	else if(n == 8)
+		LCD_WriteData('8');
+	else if(n == 9)
+		LCD_WriteData('9');
+	else if(n == 0)
+		LCD_WriteData('0');
+}
 
+void writeNum(unsigned long s){
+	unsigned long tmp = 0;
+	tmp = s / 100;
+	LCD_Cursor(27);
+	num_to_char(tmp);
+	s = s % 100;
+	tmp = s/10;
+	LCD_Cursor(28);
+	num_to_char(tmp);
+}
 
 static unsigned short display_line= 1;
 static unsigned int   arrow_pos = 1;
+static bool gg = false;
 //get input from laptop keyboard
 enum SM2_States {sm2_title, sm2_menu, sm2_game, sm2_gg};
 int SM2_Tick(int state){
 
 	static bool change = false;
-	input_char = 0x00;
+	//input_char = 0x00;
 	if(USART_HasReceived(0))
 		input_char = USART_Receive(0);
 	if(USART_IsSendReady(0))
@@ -243,9 +284,10 @@ int SM2_Tick(int state){
 				LCD_Cursor(33);
 			}
 			if(input_char == START && (display_line != 1 || arrow_pos != 1)){
-				game = true;	
 				state = sm2_game;
+				game = true;	
 				change = false;
+				LCD_ClearScreen();
 			}
 			else{
 				state = sm2_menu;
@@ -256,24 +298,78 @@ int SM2_Tick(int state){
 		case sm2_game:
 			if(n < SONG_LENGTH){
 				LCD_ClearScreen();
-
+				LCD_Cursor(1);
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_Cursor(17);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				LCD_WriteData(2);
+				LCD_WriteData(3);
+				LCD_WriteData(' ');
+				// LCD_DisplayString(20," Score: ");
+				// score = addScore(score,curNotes);
+				// writeNum(score);
 				//display score
 				//display character
 				state = sm2_game;
 			}
-			else
+			else{
+				LCD_ClearScreen();
 				state = sm2_gg;
+			}
 		break;
 		case sm2_gg:
 			n = 0;
 			game = false;
-			LCD_ClearScreen();
-			state = sm2_menu;
+			input_char = 0x00;
+			if(!gg){
+				LCD_DisplayString(3," Good Game! :)   Score: ");
+				LCD_Cursor(27);
+				writeNum(score);
+				score = 0;
+				gg = true;
+			}
+			if(input_char == START){
+				state = sm2_menu;
+				gg = false;
+				LCD_ClearScreen();
+			}
+			else{
+				state = sm2_gg;
+			}
 		break;
-		default: 
+		default:
 			state = sm2_title; 
 		break;
 	}
+
 	// PORTB = LED;
 	return state;
 }
@@ -327,8 +423,8 @@ int main(void)
 
 	/*** PERIODs of SMs ***/
 	unsigned long int SM1_Tick_calc = 1; //LED Matrix columns
-	unsigned long int SM2_Tick_calc = 50; //keyboard input
-	unsigned long int SM3_Tick_calc = 100; //LED Matrix rows
+	unsigned long int SM2_Tick_calc = 20; //keyboard input
+	unsigned long int SM3_Tick_calc = 50; //LED Matrix rows
 	// unsigned long int SM4_Tick_calc = 50;
 
 	/***/
