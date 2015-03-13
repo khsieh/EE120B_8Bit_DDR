@@ -78,12 +78,10 @@ static unsigned char column_sel = 0x55; // grounds column to display pattern
 
 //"SONGS"
 char* collection[4] = {" MENU", " Saika", " Wing of Piano", " Utoiosphere"};
-// collection[0]=" MENU";
-// collection[1]=" Saika";
-// collection[2]=" Wings of Piano";
 
 //song patterns
 const unsigned char Saika_keys[] = {ZERO, ZERO, ZERO, LEFT, LEFT, RIGHT, RIGHT, UP, DOWN, UP, DOWN, RIGHT, LEFT, UP, RIGHT, ZERO};
+// const unsigned char Saika_notes[] = {};
 const unsigned int SONG_LENGTH = 15;
 unsigned int n = 0;
 
@@ -93,19 +91,67 @@ unsigned char DOWNNotes 	= 0x00;
 unsigned char RIGHTNotes	= 0x00;
 static unsigned char curNotes = 0x00;
 
+unsigned long addScore(unsigned long score, unsigned char note){
+	if(input_char == UP_LOWER || input_char == UP_UPPER){
+		if(note == UP){
+			score = score + 10;
+		}
+	}
+	if(input_char == LEFT_LOWER || input_char == LEFT_UPPER){
+		if(note == LEFT){
+			score = score + 10;
+		}
+	}
+	if(input_char == DOWN_LOWER || input_char == DOWN_UPPER){
+		if(note == DOWN){
+			score = score + 10;
+		}
+	}
+	if(input_char == RIGHT_LOWER || input_char == RIGHT_UPPER){
+		if(note == RIGHT){
+			score = score + 10;
+		}
+	}
+	return score;
+}
+
 //matrix display
-enum SM1_States {sm1_display1, sm1_display2, sm1_display3, sm1_display4};
+enum SM1_States {sm1_wait, sm1_display1, sm1_display2, sm1_display3, sm1_display4};
 int SM1_Tick(int state) { //matrix display
 	// === Local Variables ===
 	// shift = row_sel & 0xFE;
 	curNotes = 0x00;
 	// === Transitions ===
 	switch (state) { // cycle through each column //transition
-		case sm1_display1: state = sm1_display2; break;
-		case sm1_display2: state = sm1_display3; break;
-		case sm1_display3: state = sm1_display4; break;
-		case sm1_display4: state = sm1_display1; break;
-		default: state = sm1_display1; break;
+		case sm1_wait: 
+			if(game) state = sm1_display1;
+			else state = sm1_wait;
+		break;
+		case sm1_display1: 
+			if(!game)
+				state = sm1_wait;
+			else
+				state = sm1_display2; 
+		break;
+		case sm1_display2: 
+			if(!game)
+				state = sm1_wait;
+			else
+				state = sm1_display3; 
+			break;
+		case sm1_display3: 
+			if(!game)
+				state = sm1_wait;
+			else
+				state = sm1_display4; 
+			break;
+		case sm1_display4: 
+			if(!game)
+				state = sm1_wait;
+			else
+				state = sm1_display1; 
+			break;
+		default: state = sm1_wait; break;
 	}
 
 	// === Actions ===
@@ -132,37 +178,14 @@ int SM1_Tick(int state) { //matrix display
 			break; 
 		default: break;
 	}
-
+	score = addScore(score,curNotes);
 	curNotes = curNotes | 0x01;
-	// PORTA = row_sel; // PORTA displays column pattern
-	PORTA = curNotes;
+	PORTA = curNotes; // PORTA displays column pattern
 	PORTC = column_sel; // PORTC selects column to display pattern
 	return state;
 };
 
-unsigned long addScore(unsigned long score, unsigned char note){
-	if(input_char == UP_LOWER || input_char == UP_UPPER){
-		if(note == UP){
-			score = score + 10;
-		}
-	}
-	if(input_char == LEFT_LOWER || input_char == LEFT_UPPER){
-		if(note == LEFT){
-			score = score + 10;
-		}
-	}
-	if(input_char == DOWN_LOWER || input_char == DOWN_UPPER){
-		if(note == DOWN){
-			score = score + 10;
-		}
-	}
-	if(input_char == RIGHT_LOWER || input_char == RIGHT_UPPER){
-		if(note == RIGHT){
-			score = score + 10;
-		}
-	}
-	return score;
-}
+
 
 static unsigned short display_line= 1;
 static unsigned int   arrow_pos = 1;
@@ -179,10 +202,18 @@ int SM2_Tick(int state){
 
 	switch(state){
 		case sm2_title:
-			if(input_char != START)
-				state = sm2_title;
-			else
+			LCD_DisplayString(4," 8BIT DDR      Press Start");
+			LCD_Cursor(3);
+			LCD_WriteData(0);
+			LCD_Cursor(14);
+			LCD_WriteData(0);
+			// LCD_Cursor(0);
+			LCD_Cursor(33);
+				
+			if(input_char == START)
 				state = sm2_menu;
+			else
+				state = sm2_title;
 		break;
 		case sm2_menu:
 			if(input_char == DOWN_UPPER || input_char == DOWN_LOWER){
@@ -211,7 +242,7 @@ int SM2_Tick(int state){
 				LCD_WriteData(7);
 				LCD_Cursor(33);
 			}
-			if(input_char == START && display_line != 1 && arrow_pos != 1){
+			if(input_char == START && (display_line != 1 || arrow_pos != 1)){
 				game = true;	
 				state = sm2_game;
 				change = false;
@@ -220,10 +251,14 @@ int SM2_Tick(int state){
 				state = sm2_menu;
 				change = false;
 			}
+			input_char = 0x00;
 		break;
 		case sm2_game:
 			if(n < SONG_LENGTH){
 				LCD_ClearScreen();
+
+				//display score
+				//display character
 				state = sm2_game;
 			}
 			else
@@ -292,8 +327,8 @@ int main(void)
 
 	/*** PERIODs of SMs ***/
 	unsigned long int SM1_Tick_calc = 1; //LED Matrix columns
-	unsigned long int SM2_Tick_calc = 500; //keyboard input
-	unsigned long int SM3_Tick_calc = 50; //LED Matrix rows
+	unsigned long int SM2_Tick_calc = 50; //keyboard input
+	unsigned long int SM3_Tick_calc = 100; //LED Matrix rows
 	// unsigned long int SM4_Tick_calc = 50;
 
 	/***/
@@ -354,13 +389,8 @@ int main(void)
 
 	LCD_init();
 	LCD_specialChar();
-	LCD_DisplayString(4," 8BIT DDR      Press Start");
-	LCD_Cursor(3);
-	LCD_WriteData(0);
-	LCD_Cursor(14);
-	LCD_WriteData(0);
-	LCD_Cursor(0);
-	LCD_Cursor(31);
+	// LCD_ClearScreen();
+	
 
 	initUSART(0);
 	USART_Flush(0);
